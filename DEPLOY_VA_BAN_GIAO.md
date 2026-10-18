@@ -16,6 +16,13 @@ Xem THU_THAP_PRIVATE.md. Không đánh dấu đã nộp nếu chưa có public d
 
 ## Web model
 
+URL Streamlit công khai: https://tfc-dinov3-gesture.streamlit.app/
+
+Đã kiểm tra ngày 18/10/2026: ứng dụng khởi động với Python 3.11, tải model từ
+Git LFS, đọc CSV mẫu 900 dòng, hiển thị hai biểu đồ và chạy dự đoán thật cho đủ
+8 lớp. Kết quả demo vẫn phải kèm ghi chú baseline InGesture học từ đầu,
+accuracy 39.8%, macro F1 18.6% và chưa kiểm chứng trên smartphone private.
+
 Ưu tiên `start_streamlit.cmd` và http://localhost:8501 cho bản sẽ deploy miễn
 phí. FastAPI gốc vẫn chạy bằng `start_web.cmd` tại http://127.0.0.1:8000.
 Model cần nằm tại
@@ -35,8 +42,6 @@ Truy cập http://127.0.0.1:7860. Dockerfile dùng CPU cho inference và cổng 
 Đây là cấu hình chuẩn bị, không khẳng định Docker đã được kiểm thử nếu máy
 chưa cài/chạy Docker. Model và repo public cần tuân thủ giấy phép tương ứng.
 
-Streamlit Community Cloud dùng `streamlit_app.py` và `requirements.txt` để tạo
-URL `.streamlit.app`. Việc push cập nhật và tạo app công khai chỉ thực hiện sau
-khi người dùng xác nhận. Không có deploy URL khi mới chạy localhost. Baseline
-InGesture chưa đạt kiểm chứng smartphone thì phải ghi rõ là demo trong trang
-nộp bài.
+Streamlit Community Cloud dùng `streamlit_app.py` và `requirements.txt`. App đã
+được tạo công khai sau khi người dùng xác nhận. Baseline InGesture chưa đạt kiểm
+chứng smartphone nên phải ghi rõ là demo trong trang nộp bài.

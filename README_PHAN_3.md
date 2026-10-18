@@ -1,5 +1,13 @@
 # Phần 3 — Web TF-C Prediction
 
+**URL công khai:** https://tfc-dinov3-gesture.streamlit.app/
+
+Ngày 18/10/2026, bản triển khai đã được kiểm tra bằng `gesture_example.csv`:
+đọc đủ 900 mẫu, hiển thị time series/FFT, tải `model_bundle.pt` và trả về nhãn,
+confidence cùng xác suất của đủ 8 lớp. Đây vẫn là baseline InGesture học từ đầu
+với accuracy 39.8% và macro F1 18.6%, chưa phải kết quả kiểm chứng trên dữ liệu
+smartphone private.
+
 Xem BAT_DAU_TAI_DAY.md cho bản baseline offline học từ đầu và
 DEPLOY_VA_BAN_GIAO.md cho trạng thái nộp bài. Nguồn khởi tạo và metric thật
 được hiển thị trong cột kết quả; không coi baseline là DINOv3 pretrained.
@@ -67,7 +75,7 @@ mặc định là 206.
 6. Trong Advanced settings, chọn Python 3.11 rồi bấm **Deploy**.
 7. Kiểm tra log phải tải được Git LFS model, sau đó dùng CSV mẫu và chạy dự đoán.
 
-URL bàn giao có dạng `https://<ten-app>.streamlit.app`. Nếu log báo
+URL bàn giao hiện tại là `https://tfc-dinov3-gesture.streamlit.app/`. Nếu log báo
 `Git LFS chưa tải nội dung model_bundle.pt`, máy chủ chỉ nhận file pointer;
 không được coi deploy đã hoàn tất cho đến khi model thật được tải về.
 

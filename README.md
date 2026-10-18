@@ -17,7 +17,8 @@
 >
 > **Web deploy:** `streamlit_app.py` cung cấp giao diện ba cột dùng model thật
 > và có thể triển khai miễn phí từ repository này bằng Streamlit Community
-> Cloud. Xem [README_PHAN_3.md](README_PHAN_3.md).
+> Cloud. Bản đang hoạt động: **https://tfc-dinov3-gesture.streamlit.app/**.
+> Xem [README_PHAN_3.md](README_PHAN_3.md).
 
 #### Authors: [Xiang Zhang](http://xiangzhang.info/) (xiang.alan.zhang@gmail.com), [Ziyuan Zhao](https://github.com/mims-harvard/Raindrop)(ziyuanzhao@college.harvard.edu), <br/>
 ####  [Theodoros Tsiligkaridis](https://github.com/mims-harvard/Raindrop)(ttsili@ll.mit.edu), [Marinka Zitnik](https://zitniklab.hms.harvard.edu/) (marinka@hms.harvard.edu)
