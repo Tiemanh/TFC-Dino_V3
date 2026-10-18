@@ -1,0 +1,6 @@
+# Install a CUDA-enabled PyTorch build for the local NVIDIA driver first.
+# Tested on this workstation with torch 2.6.0+cu124.
+transformers==4.56.2
+numpy>=1.26,<3
+scikit-learn>=1.4,<2
+pandas>=2.2,<4

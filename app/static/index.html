@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TF-C Prediction</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="window-shell">
+    <header class="titlebar">
+      <div>
+        <h1>TF-C Prediction</h1>
+        <p>Nhận dạng 8 cử chỉ bằng TF-C + DINOv3</p>
+      </div>
+      <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    </header>
+
+    <div class="workspace">
+      <section class="panel input-panel">
+        <h2>Input Data</h2>
+        <label class="drop-zone" id="dropZone" for="fileInput">
+          <input id="fileInput" type="file" accept=".csv,.txt,text/csv,text/plain" hidden>
+          <span class="upload-icon">⇧</span>
+          <strong>Chọn file dữ liệu</strong>
+          <span>Chấp nhận .CSV hoặc .TXT</span>
+          <span class="choose-file-button">Chọn file CSV/TXT</span>
+          <small>Kéo thả file vào đây hoặc bấm nút phía trên</small>
+        </label>
+        <div class="sample-actions">
+          <button id="useSample" type="button">Dùng CSV mẫu</button>
+          <a href="sample-data/gesture_example.csv" download>Tải CSV mẫu</a>
+        </div>
+        <div class="file-card" id="fileCard" hidden>
+          <div class="file-icon">CSV</div>
+          <div><strong id="fileName"></strong><span id="fileMeta"></span></div>
+          <button id="clearFile" aria-label="Xóa file">×</button>
+        </div>
+        <div class="format-note">
+          <strong>Định dạng yêu cầu</strong>
+          <code>timestamp, x, y, z</code>
+          <p>Tối thiểu <span id="requiredSamples">206</span> mẫu cảm biến.</p>
+        </div>
+      </section>
+
+      <section class="panel preview-panel">
+        <h2>Signal Preview</h2>
+        <article class="chart-card">
+          <div class="chart-title"><strong>Time Series (Time Domain)</strong><div class="legend"><i class="x"></i>X <i class="y"></i>Y <i class="z"></i>Z</div></div>
+          <canvas id="timeChart" width="640" height="230" aria-label="Biểu đồ tín hiệu X Y Z"></canvas>
+        </article>
+        <article class="chart-card frequency-card">
+          <div class="chart-title"><strong>Frequency Spectrum</strong><span>FFT magnitude, derived internally from the sample</span></div>
+          <canvas id="frequencyChart" width="640" height="180" aria-label="Phổ tần số trục X"></canvas>
+        </article>
+        <button class="run-button" id="runButton" disabled><span>▶</span> Run Prediction</button>
+        <p class="status-line" id="statusLine" role="status">Hãy tải file dữ liệu để bắt đầu.</p>
+      </section>
+
+      <section class="panel result-panel">
+        <h2>Prediction Result</h2>
+        <article class="result-card predicted-card">
+          <span>Predicted</span>
+          <strong id="predictedLabel">—</strong>
+        </article>
+        <article class="result-card confidence-card">
+          <div><strong>Confidence:</strong><b id="confidenceText">—</b></div>
+          <div class="confidence-track"><span id="confidenceBar"></span></div>
+        </article>
+        <article class="result-card probabilities-card">
+          <strong>Class Probabilities</strong>
+          <div id="probabilities" class="probabilities"><p class="empty-result">Kết quả sẽ xuất hiện sau khi model chạy.</p></div>
+        </article>
+        <div class="model-state" id="modelState"><span></span><p>Đang kiểm tra model…</p></div>
+      </section>
+    </div>
+  </main>
+  <footer>Dự đoán được tính từ model thật. Confidence là điểm xác suất của model, không phải độ chính xác kiểm thử. Bản InGesture yêu cầu gia tốc đơn vị g, tần số 200 Hz.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

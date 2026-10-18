@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Web app: TF-C Prediction",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Training: offline InGesture (new output folder)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "program": "${workspaceFolder}/train_offline.py",
+      "args": ["--output-dir", "${workspaceFolder}/artifacts/offline_vscode_run"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "DINOv3: smoke test (tiny)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/code/TFC/smoke_test_dinov3.py",
+      "cwd": "${workspaceFolder}/code/TFC",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "DINOv3: smoke test (full ViT-S)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/code/TFC/smoke_test_dinov3.py",
+      "args": ["--full-architecture"],
+      "cwd": "${workspaceFolder}/code/TFC",
+      "console": "integratedTerminal"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+.git
+.venv
+**/__pycache__
+data
+datasets
+weights
+tests
+code/baselines
+code/experiments_logs
+artifacts/*
+!artifacts/gesture_model
+artifacts/gesture_model/*
+!artifacts/gesture_model/model_bundle.pt
+!artifacts/gesture_model/metrics.json
+!artifacts/gesture_model/training_info.json

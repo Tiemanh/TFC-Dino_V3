@@ -1,0 +1,9 @@
+true_label / predicted_label,other,fluid_intake,answering_cell_phone,scratching_head,passing_hand_over_face,adjusting_glasses_touching_temples,holding_chin,stretching_with_hands_behind_neck
+other,4935,805,260,2010,558,1119,766,1471
+fluid_intake,61,918,189,85,122,148,106,293
+answering_cell_phone,78,203,126,108,151,90,87,123
+scratching_head,3,8,8,70,21,7,8,24
+passing_hand_over_face,5,20,17,39,45,7,17,19
+adjusting_glasses_touching_temples,4,23,17,34,29,21,16,14
+holding_chin,12,18,11,27,47,22,28,13
+stretching_with_hands_behind_neck,14,24,12,27,12,5,11,87

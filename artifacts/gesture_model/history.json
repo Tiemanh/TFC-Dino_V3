@@ -1,0 +1,96 @@
+[
+  {
+    "stage": "pretrain",
+    "epoch": 1,
+    "loss": 6.047005124390125
+  },
+  {
+    "stage": "pretrain",
+    "epoch": 2,
+    "loss": 5.599628459662199
+  },
+  {
+    "stage": "finetune",
+    "epoch": 1,
+    "loss": 2.003767168149352,
+    "accuracy": 0.236328125,
+    "validation_macro_f1": 0.16979712731487578
+  },
+  {
+    "stage": "finetune",
+    "epoch": 2,
+    "loss": 1.8996832435950637,
+    "accuracy": 0.2890625,
+    "validation_macro_f1": 0.21418986778555077
+  },
+  {
+    "stage": "finetune",
+    "epoch": 3,
+    "loss": 1.825355620123446,
+    "accuracy": 0.33056640625,
+    "validation_macro_f1": 0.2632020335850752
+  },
+  {
+    "stage": "finetune",
+    "epoch": 4,
+    "loss": 1.7698551630601287,
+    "accuracy": 0.34765625,
+    "validation_macro_f1": 0.24980663050803167
+  },
+  {
+    "stage": "finetune",
+    "epoch": 5,
+    "loss": 1.6971653178334236,
+    "accuracy": 0.36669921875,
+    "validation_macro_f1": 0.2998500751060605
+  },
+  {
+    "stage": "finetune",
+    "epoch": 6,
+    "loss": 1.657399969175458,
+    "accuracy": 0.3916015625,
+    "validation_macro_f1": 0.2897976003974405
+  },
+  {
+    "stage": "finetune",
+    "epoch": 7,
+    "loss": 1.6617209492251277,
+    "accuracy": 0.3837890625,
+    "validation_macro_f1": 0.30144460837025955
+  },
+  {
+    "stage": "finetune",
+    "epoch": 8,
+    "loss": 1.5969445342198014,
+    "accuracy": 0.42333984375,
+    "validation_macro_f1": 0.2524329718583378
+  },
+  {
+    "stage": "finetune",
+    "epoch": 9,
+    "loss": 1.5606806855648756,
+    "accuracy": 0.43115234375,
+    "validation_macro_f1": 0.28002417150636044
+  },
+  {
+    "stage": "finetune",
+    "epoch": 10,
+    "loss": 1.5451544979587197,
+    "accuracy": 0.42138671875,
+    "validation_macro_f1": 0.27618527109041047
+  },
+  {
+    "stage": "finetune",
+    "epoch": 11,
+    "loss": 1.5031183157116175,
+    "accuracy": 0.4482421875,
+    "validation_macro_f1": 0.31447874166531864
+  },
+  {
+    "stage": "finetune",
+    "epoch": 12,
+    "loss": 1.48376470990479,
+    "accuracy": 0.45751953125,
+    "validation_macro_f1": 0.3235943729951209
+  }
+]
