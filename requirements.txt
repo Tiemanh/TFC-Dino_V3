@@ -1,0 +1,8 @@
+streamlit==1.50.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0+cpu; sys_platform != "win32"
+torch==2.6.0; sys_platform == "win32"
+transformers==4.56.2
+numpy>=1.26,<3
+pandas>=2.2,<4
+scikit-learn>=1.4,<2

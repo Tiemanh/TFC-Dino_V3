@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import io
 import os
 import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,17 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 TFC_DIR = ROOT / "code" / "TFC"
 sys.path.insert(0, str(TFC_DIR))
 from inference import GesturePredictor  # noqa: E402
+from app.data_io import parse_xyz_bytes  # noqa: E402
 
 
 MODEL_PATH = Path(os.environ.get("MODEL_BUNDLE_PATH", ROOT / "artifacts" / "gesture_model" / "model_bundle.pt"))
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 SAMPLE_FILE = ROOT / "sample_data" / "gesture_example.csv"
-AXIS_ALIASES = {
-    "x": ("x", "ax", "accx", "accel_x", "accelerometer_x"),
-    "y": ("y", "ay", "accy", "accel_y", "accelerometer_y"),
-    "z": ("z", "az", "accz", "accel_z", "accelerometer_z"),
-}
-
 app = FastAPI(title="TF-C + DINOv3 Gesture Prediction", version="1.0.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 _predictor = None
@@ -55,21 +47,9 @@ def get_predictor():
 
 def parse_xyz(contents: bytes):
     try:
-        frame = pd.read_csv(io.BytesIO(contents), sep=None, engine="python")
+        return parse_xyz_bytes(contents)
     except Exception as error:
-        raise HTTPException(400, f"Không đọc được CSV: {error}") from error
-    lookup = {str(column).strip().lower(): column for column in frame.columns}
-    selected = {}
-    for target, aliases in AXIS_ALIASES.items():
-        source = next((lookup[name] for name in aliases if name in lookup), None)
-        if source is None:
-            raise HTTPException(400, f"Thiếu cột trục {target.upper()}; cần X/Y/Z hoặc AX/AY/AZ")
-        selected[target] = pd.to_numeric(frame[source], errors="coerce")
-    xyz = pd.DataFrame(selected).replace([np.inf, -np.inf], np.nan)
-    xyz = xyz.interpolate(limit_direction="both").dropna()
-    if xyz.empty:
-        raise HTTPException(400, "File không chứa mẫu cảm biến hợp lệ")
-    return xyz.to_numpy(dtype=np.float32)
+        raise HTTPException(400, str(error)) from error
 
 
 @app.get("/")

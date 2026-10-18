@@ -2,7 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Web app: TF-C Prediction",
+      "name": "Web app: Streamlit (deploy version)",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": ["run", "streamlit_app.py", "--server.port", "8501"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Web app: FastAPI (original version)",
       "python": "${workspaceFolder}/.venv/Scripts/python.exe",
       "type": "debugpy",
       "request": "launch",

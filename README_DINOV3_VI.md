@@ -47,11 +47,10 @@ Không dùng `torch.no_grad()` quanh backbone vì gradient cần đi xuyên qua 
 | `tests/test_dinov3_model.py` | Unit test shape, channel validation, 8 logits và chính sách freeze |
 | `requirements-dinov3.txt` | Thư viện bổ sung cho DINOv3 |
 
-Xem diff chính xác so với tác giả:
-
-```powershell
-git diff origin/main -- code/TFC/model.py code/TFC/dataloader.py code/TFC/main.py code/config_files/HAR_Configs.py
-```
+Mốc đối chiếu là commit `9667582` của
+[`mims-harvard/TFC-pretraining`](https://github.com/mims-harvard/TFC-pretraining/tree/9667582).
+`origin/main` của repository này là bản mở rộng đã bàn giao, không phải nhánh
+gốc của tác giả.
 
 ## Cài trên VS Code / Windows
 
@@ -152,8 +151,12 @@ không nạp nhầm checkpoint Transformer cũ đi kèm repo tác giả.
 
 ## Giới hạn đã biết
 
-- Chưa có dữ liệu private thật trong repo này, nên chưa có checkpoint 8 cử chỉ hay metric.
+- Chưa có dữ liệu private smartphone thật trong repo này. Checkpoint hiện có
+  được học từ đầu trên InGesture v5 công khai: test accuracy 39,8%, macro F1
+  18,6%; đây là baseline thử nghiệm và không được trình bày như model tin cậy.
 - Trọng số pretrained chưa thể được kiểm tra cho đến khi chủ tài khoản chấp nhận giấy phép DINOv3.
+- Web dùng bundle hiện có tại `artifacts/gesture_model/model_bundle.pt` và có
+  hai entrypoint: FastAPI `app/main.py`, Streamlit `streamlit_app.py`.
 - Adapter tạo ảnh tín hiệu là thiết kế của bản mở rộng này, không phải đóng góp được
   mô tả trong bài TF-C gốc. README phải giữ thông tin này khi nộp.
 - Với 4 GB VRAM, cấu hình mặc định freeze backbone và cần batch nhỏ khi chạy dữ liệu thật.

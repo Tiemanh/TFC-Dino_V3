@@ -14,7 +14,21 @@ Backend chỉ dự đoán khi có model thật tại
 `artifacts/gesture_model/model_bundle.pt`. Nếu chưa có bundle, giao diện vẫn cho
 xem tín hiệu nhưng vô hiệu hóa nút dự đoán; không sinh kết quả giả.
 
-## Chạy local
+## Chạy Streamlit local (bản dùng để deploy)
+
+Nhấp đúp `start_streamlit.cmd`, hoặc chạy:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+Mở `http://localhost:8501`. File `streamlit_app.py` dùng trực tiếp
+`GesturePredictor` và `model_bundle.pt`; `st.cache_resource` chỉ nạp model một
+lần cho mỗi tiến trình. Nút CSV mẫu, upload CSV/TXT, hai biểu đồ và dự đoán đủ
+8 xác suất đều đã được nối với model thật.
+
+## Chạy FastAPI local (bản giao diện gốc)
 
 Trên Windows: nhấp đúp `start_web.cmd`, giữ cửa sổ này mở và truy cập
 `http://127.0.0.1:8000`. Không mở `index.html` bằng Live Server hoặc trực tiếp.
@@ -42,7 +56,22 @@ Chấp nhận các tên trục `x/y/z`, `ax/ay/az`, `accX/accY/accZ` hoặc
 `accel_x/accel_y/accel_z`. File cần ít nhất số mẫu ghi trong metadata của model,
 mặc định là 206.
 
-## Deploy
+## Deploy miễn phí bằng Streamlit Community Cloud
+
+1. Push `streamlit_app.py`, `requirements.txt`, `.streamlit/config.toml`,
+   `app/data_io.py` và các thay đổi liên quan lên GitHub.
+2. Đăng nhập `https://share.streamlit.io` bằng GitHub.
+3. Chọn **Create app** -> **Yup, I have an app**.
+4. Repository: `Tiemanh/TFC-Dino_V3`; branch: `main`.
+5. Main file path: `streamlit_app.py`.
+6. Trong Advanced settings, chọn Python 3.11 rồi bấm **Deploy**.
+7. Kiểm tra log phải tải được Git LFS model, sau đó dùng CSV mẫu và chạy dự đoán.
+
+URL bàn giao có dạng `https://<ten-app>.streamlit.app`. Nếu log báo
+`Git LFS chưa tải nội dung model_bundle.pt`, máy chủ chỉ nhận file pointer;
+không được coi deploy đã hoàn tất cho đến khi model thật được tải về.
+
+## Deploy Docker (tùy chọn)
 
 `Dockerfile` đã chuẩn bị cổng 7860 cho Hugging Face Spaces hoặc một nền tảng chạy
 Docker. Model bundle phải được thêm sau khi train dữ liệu thật. Không deploy bản
