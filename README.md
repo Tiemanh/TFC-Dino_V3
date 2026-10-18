@@ -1,5 +1,7 @@
 # TF-C + DINOv3 cho nhận dạng 8 cử chỉ InGesture
 
+Repository này hoàn thành **yêu cầu 1**: phát triển từ mã nguồn công khai của
+bài báo TF-C và thay **cả Time Encoder lẫn Frequency Encoder bằng DINOv3**.
 Dữ liệu chính của dự án là **InGesture v5** với ba trục gia tốc X/Y/Z và tám
 nhãn cử chỉ. Model đã xuất nằm tại
 `artifacts/gesture_model/model_bundle.pt`.
