@@ -2,7 +2,7 @@
 
 Nguồn khởi tạo: `random_full_vits16`. Dataset: InGesture v5.
 
-Đây là kết quả đo thật trên InGesture công khai, không phải dữ liệu smartphone private.
+Đây là kết quả đo thật trên InGesture v5 công khai.
 Hai backbone đầy đủ ViT-S/16 được học từ đầu, không có pretrained ảnh.
 
 - Train dùng: 2048 cửa sổ.
@@ -17,7 +17,7 @@ Hai backbone đầy đủ ViT-S/16 được học từ đầu, không có pretra
 
 Accuracy của baseline hiện thấp hơn cách luôn đoán lớp đa số; macro F1 và
 balanced accuracy cho thấy model còn yếu. Không dùng để tuyên bố hệ thống
-đã đạt chất lượng nhận dạng smartphone. Confidence softmax chưa được hiệu chỉnh.
+đã đạt chất lượng nhận dạng cao. Confidence softmax chưa được hiệu chỉnh.
 
 | Nhãn | Precision | Recall | F1 | Số cửa sổ test |
 |---|---:|---:|---:|---:|
@@ -35,5 +35,5 @@ fit normalization. Epoch được chọn bằng validation, không dựa vào te
 Đánh giá trên từng cửa sổ; web tổng hợp xác suất qua các cửa sổ của file.
 Không so sánh accuracy cửa sổ này với một dự đoán demo trên file train.
 
-Các việc còn lại: thu và xác nhận nhãn private, huấn luyện/đánh giá lại,
-cải thiện chất lượng, rồi xác nhận công khai GitHub/Kaggle/deploy.
+Hướng cải thiện: dùng DINOv3 pretrained hợp lệ, huấn luyện trên toàn bộ
+tập train, cân bằng lớp và chạy thêm nhiều seed trước khi báo cáo.

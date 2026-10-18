@@ -25,7 +25,7 @@ def main():
     lines = [
         '# Kết quả baseline TF-C + DINOv3 học từ đầu', '',
         f"Nguồn khởi tạo: `{info['initialization']}`. Dataset: {info['dataset']}.", '',
-        'Đây là kết quả đo thật trên InGesture công khai, không phải dữ liệu smartphone private.',
+        'Đây là kết quả đo thật trên InGesture v5 công khai.',
         'Hai backbone đầy đủ ViT-S/16 được học từ đầu, không có pretrained ảnh.', '',
         f"- Train dùng: {info['train_windows_used']} cửa sổ.",
         f"- Validation dùng: {info['validation_windows_used']} cửa sổ, chọn epoch {info['best_validation_epoch']}.",
@@ -38,7 +38,7 @@ def main():
         f'- Accuracy nếu luôn đoán lớp đa số: {majority:.2%}.', '',
         'Accuracy của baseline hiện thấp hơn cách luôn đoán lớp đa số; macro F1 và',
         'balanced accuracy cho thấy model còn yếu. Không dùng để tuyên bố hệ thống',
-        'đã đạt chất lượng nhận dạng smartphone. Confidence softmax chưa được hiệu chỉnh.', '',
+        'đã đạt chất lượng nhận dạng cao. Confidence softmax chưa được hiệu chỉnh.', '',
         '| Nhãn | Precision | Recall | F1 | Số cửa sổ test |',
         '|---|---:|---:|---:|---:|',
     ]
@@ -48,8 +48,8 @@ def main():
               'fit normalization. Epoch được chọn bằng validation, không dựa vào test.',
               'Đánh giá trên từng cửa sổ; web tổng hợp xác suất qua các cửa sổ của file.',
               'Không so sánh accuracy cửa sổ này với một dự đoán demo trên file train.', '',
-              'Các việc còn lại: thu và xác nhận nhãn private, huấn luyện/đánh giá lại,',
-              'cải thiện chất lượng, rồi xác nhận công khai GitHub/Kaggle/deploy.']
+              'Hướng cải thiện: dùng DINOv3 pretrained hợp lệ, huấn luyện trên toàn bộ',
+              'tập train, cân bằng lớp và chạy thêm nhiều seed trước khi báo cáo.']
     (args.output_dir / 'EVALUATION.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
     (args.output_dir / 'metrics.json').write_text(json.dumps(metrics, indent=2), encoding='utf-8')
     (args.output_dir / 'training_info.json').write_text(json.dumps(info, indent=2), encoding='utf-8')

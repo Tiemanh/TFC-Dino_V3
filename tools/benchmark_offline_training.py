@@ -12,7 +12,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "code" / "TFC"))
 sys.path.insert(0, str(ROOT / "code"))
-from config_files.HAR_Configs import Config
+from config_files.InGesture_Configs import Config
 from model import TFC, target_classifier
 from train_gestures import contrastive_loss
 

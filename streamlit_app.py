@@ -243,7 +243,7 @@ with right:
                 'Baseline TF-C + DINOv3 ViT-S/16 học từ đầu trên InGesture; '
                 f'accuracy {metrics.get("test_accuracy", 0):.1%}, '
                 f'macro F1 {metrics.get("macro_f1", 0):.1%}. '
-                'Chưa dùng pretrained và chưa kiểm chứng trên smartphone.</div>',
+                'Chưa dùng trọng số pretrained.</div>',
                 unsafe_allow_html=True,
             )
         else:

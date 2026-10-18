@@ -20,7 +20,7 @@ def main():
         return 1
     if not (args.data_dir / 'metadata.json').exists():
         if args.data_dir.resolve() != (ROOT / 'datasets' / 'InGestureOffline').resolve():
-            parser.error('Prepare this private dataset before starting training')
+            parser.error('Prepare the selected InGesture directory before starting training')
         subprocess.run([sys.executable, str(ROOT / 'tools' / 'prepare_ingesture_data.py'),
                         '--input-dir', str(ROOT / 'data' / 'external' / 'InGesture'),
                         '--output-dir', str(args.data_dir), '--val-ratio', '0.16'], check=True, cwd=ROOT)

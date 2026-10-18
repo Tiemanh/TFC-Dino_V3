@@ -9,15 +9,15 @@ import pandas as pd
 import torch
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "prepare_gesture_data.py"
-SPEC = importlib.util.spec_from_file_location("prepare_gesture_data", SCRIPT)
+SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "prepare_ingesture_data.py"
+SPEC = importlib.util.spec_from_file_location("prepare_ingesture_data", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 TFC_DIR = Path(__file__).resolve().parents[1] / "code" / "TFC"
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "code"
 sys.path.insert(0, str(TFC_DIR))
 sys.path.insert(0, str(CONFIG_DIR))
-from config_files.HAR_Configs import Config  # noqa: E402
+from config_files.InGesture_Configs import Config  # noqa: E402
 from dataloader import Load_Dataset  # noqa: E402
 from model import TFC, target_classifier  # noqa: E402
 from train_gestures import run_finetune, run_pretrain  # noqa: E402
@@ -54,32 +54,31 @@ class GestureDataPipelineTests(unittest.TestCase):
         run_pretrain(model, pretrain_loader, model_optimizer, config, torch.device("cpu"), 1)
         run_finetune(model, classifier, train_loader, model_optimizer, classifier_optimizer, torch.device("cpu"), 1)
 
-    def test_clean_split_segment_and_normalize(self):
+    def test_ingesture_split_segment_and_normalize(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as temporary:
             raw = Path(temporary) / "raw"
             raw.mkdir()
-            for label_index in range(8):
-                for take in range(2):
+            gestures = list(MODULE.GESTURES)
+            for subject_index in range(1, 5):
+                subject = raw / f"subject_{subject_index}"
+                subject.mkdir()
+                for label_index, gesture in enumerate(gestures):
                     values = np.linspace(0, 1, 24, dtype=np.float32)
                     frame = pd.DataFrame({
                         "x": values + label_index,
-                        "y": values * 2 + take,
+                        "y": values * 2 + subject_index,
                         "z": values * 3,
-                        "label": f"gesture_{label_index}",
-                        "recording_id": f"g{label_index}_take{take}",
                     })
-                    if label_index == 0 and take == 0:
+                    if subject_index == 1 and label_index == 0:
                         frame.loc[4, "x"] = np.nan
-                    frame.to_csv(raw / f"g{label_index}_take{take}.csv", index=False)
-            data = MODULE.read_recordings(raw)
-            train_ids, test_ids = MODULE.split_recordings(data, 0.5, 42)
-            classes = sorted(data["label"].unique())
-            mapping = {name: index for index, name in enumerate(classes)}
-            stats = MODULE.fit_normalization(data, train_ids)
-            train = MODULE.make_windows(data, train_ids, mapping, 16, 8, stats)
-            test = MODULE.make_windows(data, test_ids, mapping, 16, 8, stats)
-            self.assertEqual(train["samples"].shape, (16, 3, 16))
-            self.assertEqual(test["samples"].shape, (16, 3, 16))
+                    frame.to_csv(subject / f"{gesture}__take_1.csv", index=False)
+            files = MODULE.segmented_files(raw)
+            train_subjects, test_subjects = MODULE.split_subjects(files, 0.5, 42)
+            stats = MODULE.fit_stats(files, train_subjects)
+            train, _ = MODULE.build_split(files, train_subjects, stats, 16, 8)
+            test, _ = MODULE.build_split(files, test_subjects, stats, 16, 8)
+            self.assertEqual(train["samples"].shape, (32, 3, 16))
+            self.assertEqual(test["samples"].shape, (32, 3, 16))
             self.assertEqual(set(train["labels"].tolist()), set(range(8)))
             self.assertTrue(torch.isfinite(train["samples"]).all())
 

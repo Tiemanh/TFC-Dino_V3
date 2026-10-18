@@ -83,7 +83,7 @@ def health():
     if info.get("initialization") == "random_full_vits16":
         message = (
             "Bản thử nghiệm: TF-C + DINOv3 ViT-S/16 học từ đầu trên InGesture, "
-            "chưa dùng pretrained và chưa kiểm chứng trên smartphone. "
+            "chưa dùng trọng số pretrained. "
             f"Test accuracy: {predictor.metrics.get('test_accuracy', 0):.1%}; "
             f"macro F1: {predictor.metrics.get('macro_f1', 0):.1%}."
         )

@@ -19,10 +19,8 @@ artifacts/gesture_model/*
 !artifacts/gesture_model/history.json
 tmp-runtime/
 /data/raw/*
-!/data/raw/README.md
 /data/external/InGesture/
 /weights/*
-!/weights/README.md
 *.safetensors
 *.pth
 !artifacts/gesture_model/model_bundle.pt

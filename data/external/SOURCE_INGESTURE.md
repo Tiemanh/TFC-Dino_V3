@@ -12,7 +12,7 @@
 
 Dữ liệu được giải nén vào `data/external/InGesture/`. Thư mục chứa 50 subject,
 5.410 file CSV và 5.345 file cử chỉ đã phân đoạn. Đây là dữ liệu công khai thu
-bằng IMU WT901BLECL5 đeo ở cổ tay ở 200 Hz, không phải private smartphone data.
+bằng IMU WT901BLECL5 đeo ở cổ tay ở 200 Hz.
 
 Khi công bố code hoặc kết quả, phải trích dẫn DOI, ghi giấy phép và nêu rõ mọi
 thay đổi xử lý dữ liệu. Không đưa toàn bộ thư mục này vào GitHub source code;

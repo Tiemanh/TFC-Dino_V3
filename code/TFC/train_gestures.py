@@ -1,4 +1,4 @@
-"""End-to-end pretrain, fine-tune and export for the private gesture dataset."""
+"""End-to-end TF-C + DINOv3 training and export for InGesture."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from torch import nn
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config_files.HAR_Configs import Config
+from config_files.InGesture_Configs import Config
 from dataloader import Load_Dataset
 from loss import NTXentLoss_poly
 from model import TFC, target_classifier
@@ -127,7 +127,7 @@ def cap_per_class(payload, limit, seed):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", type=Path, default=Path("../../datasets/Gesture"))
+    parser.add_argument("--data-dir", type=Path, default=Path("../../datasets/InGestureOffline"))
     parser.add_argument("--output-dir", type=Path, default=Path("../../artifacts/gesture_model"))
     parser.add_argument("--pretrain-epochs", type=int, default=10)
     parser.add_argument("--finetune-epochs", type=int, default=20)
@@ -166,7 +166,7 @@ def main():
 
     metadata_path = args.data_dir / "metadata.json"
     if not metadata_path.exists():
-        raise FileNotFoundError(f"Run tools/prepare_gesture_data.py first; missing {metadata_path}")
+        raise FileNotFoundError(f"Run tools/prepare_ingesture_data.py first; missing {metadata_path}")
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if len(metadata["class_names"]) != 8:
         raise ValueError("The prepared dataset must contain exactly 8 classes")
@@ -268,7 +268,7 @@ def main():
             "best_validation_epoch": best_epoch, "seed": args.seed,
             "image_size": config.dinov3_image_size, "batch_size": batch_size,
             "learning_rate": args.learning_rate,
-            "dataset": metadata.get("dataset", "private gestures"),
+            "dataset": metadata.get("dataset", "InGesture v5"),
             "elapsed_seconds": round(time.monotonic() - started, 1),
         },
     }
