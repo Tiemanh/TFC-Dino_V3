@@ -69,10 +69,8 @@ self.frequency_encoder = DINOv3SignalEncoder(configs, "frequency", frequency_bac
 Muốn đối chiếu với code tác giả, mở liên kết commit nền ở mục 1 rồi so sánh
 trực tiếp các file trong bảng trên.
 
-## 4. Dữ liệu chính: InGesture v5
+## 4. Dữ liệu chính: InGesture
 
-- DOI: <https://doi.org/10.17632/fdxst56tcj.5>
-- Trang tải: <https://data.mendeley.com/datasets/fdxst56tcj/5>
 - Cảm biến: WT901BLECL5 đeo cổ tay, tần số khoảng 200 Hz.
 - Giấy phép dữ liệu: CC BY 4.0.
 - Quy mô bản đã dùng: 50 subject, 5.410 CSV và 5.345 đoạn cử chỉ.
