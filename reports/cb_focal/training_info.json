@@ -1,0 +1,27 @@
+{
+  "classification_loss": "cb_focal",
+  "focal_gamma": 2.0,
+  "cb_beta": 0.999,
+  "class_counts": [
+    256.0,
+    256.0,
+    256.0,
+    256.0,
+    256.0,
+    256.0,
+    256.0,
+    256.0
+  ],
+  "initialization": "random_full_vits16",
+  "pretrain_epochs": 2,
+  "finetune_epochs": 12,
+  "train_windows_used": 2048,
+  "validation_windows_used": 512,
+  "best_validation_epoch": 11,
+  "seed": 42,
+  "image_size": 64,
+  "batch_size": 16,
+  "learning_rate": 0.0003,
+  "dataset": "InGesture v5",
+  "elapsed_seconds": 335.8
+}

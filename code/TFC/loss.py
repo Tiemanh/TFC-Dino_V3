@@ -2,6 +2,31 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
+
+class ClassBalancedFocalLoss(torch.nn.Module):
+    """Effective-number class weights multiplied by focal cross entropy.
+
+    Counts must come only from the training split. gamma=0 and beta=0
+    recover ordinary cross entropy, useful for controlled comparisons.
+    """
+
+    def __init__(self, class_counts, beta=0.999, gamma=2.0):
+        super().__init__()
+        if not 0 <= beta < 1 or gamma < 0:
+            raise ValueError("Need 0 <= beta < 1 and gamma >= 0")
+        counts = torch.as_tensor(class_counts, dtype=torch.float64)
+        if counts.ndim != 1 or not torch.isfinite(counts).all() or (counts <= 0).any():
+            raise ValueError("Every class needs a finite positive training count")
+        weights = (1 - beta) / (1 - torch.pow(beta, counts))
+        self.register_buffer("class_weights", (weights / weights.mean()).float())
+        self.gamma = gamma
+
+    def forward(self, logits, targets):
+        # log_softmax remains stable even when predictions are very confident.
+        log_pt = F.log_softmax(logits.float(), dim=1).gather(1, targets[:, None]).squeeze(1)
+        weights = self.class_weights[targets]
+        return (-weights * (1 - log_pt.exp()).pow(self.gamma) * log_pt).mean()
+
 class NTXentLoss(torch.nn.Module):
     def __init__(self, device, batch_size, temperature, use_cosine_similarity):
         super(NTXentLoss, self).__init__()

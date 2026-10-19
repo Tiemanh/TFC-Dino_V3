@@ -17,11 +17,15 @@ AXIS_ALIASES = {
 
 def parse_xyz_bytes(contents: bytes) -> np.ndarray:
     """Read a delimited text file and return finite/interpolated X/Y/Z values."""
+    if len(contents) > 5 * 1024 * 1024:
+        raise ValueError("File quá lớn; hãy chọn CSV/TXT tối đa 5 MB")
     try:
-        frame = pd.read_csv(io.BytesIO(contents), sep=None, engine="python")
+        frame = pd.read_csv(io.BytesIO(contents), sep=None, engine="python", nrows=100001)
     except Exception as error:
         raise ValueError(f"Không đọc được CSV/TXT: {error}") from error
 
+    if len(frame) > 100000:
+        raise ValueError("File vượt quá 100.000 mẫu; hãy chia thành các đoạn nhỏ hơn")
     lookup = {str(column).strip().lower(): column for column in frame.columns}
     selected = {}
     for target, aliases in AXIS_ALIASES.items():

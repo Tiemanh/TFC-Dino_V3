@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from threading import Lock
 
 import numpy as np
 import torch
@@ -12,6 +13,7 @@ from model import TFC, target_classifier
 
 class GesturePredictor:
     def __init__(self, bundle_path, device="cpu"):
+        self._prediction_lock = Lock()
         self.device = torch.device(device)
         bundle = torch.load(bundle_path, map_location=self.device, weights_only=False)
         self.training_info = bundle.get("training_info", {})
@@ -52,7 +54,16 @@ class GesturePredictor:
         return torch.from_numpy(values.T).unsqueeze(0).to(self.device)
 
     @torch.inference_mode()
-    def predict(self, xyz):
+    def predict(self, xyz, max_windows=64, batch_size=4):
+        # Cached model is shared by Streamlit sessions: serialize CPU work to
+        # bound simultaneous activation memory when several visitors predict.
+        with self._prediction_lock:
+            return self._predict(xyz, max_windows, batch_size)
+
+    @torch.inference_mode()
+    def _predict(self, xyz, max_windows, batch_size):
+        if max_windows < 1 or batch_size < 1:
+            raise ValueError("Window and batch limits must be positive")
         values = np.asarray(xyz, dtype=np.float32)
         window_size = int(self.metadata["window_size"])
         # Validate before creating windows; preprocess enforces channel/length checks.
@@ -65,10 +76,14 @@ class GesturePredictor:
         starts = list(range(0, len(values) - window_size + 1, stride))
         if starts[-1] != len(values) - window_size:
             starts.append(len(values) - window_size)
+        available_windows = len(starts)
+        if len(starts) > max_windows:
+            indices = np.linspace(0, len(starts) - 1, max_windows, dtype=int)
+            starts = [starts[index] for index in indices]
         # Average real predictions over the recording, rather than using only its tail.
         total_probabilities = torch.zeros(len(self.class_names), device=self.device)
-        for offset in range(0, len(starts), 16):
-            batch_starts = starts[offset:offset + 16]
+        for offset in range(0, len(starts), batch_size):
+            batch_starts = starts[offset:offset + batch_size]
             time_view = torch.cat([self.preprocess(values[start:start + window_size])
                                    for start in batch_starts])
             frequency_view = torch.fft.fft(time_view, dim=-1).abs()
@@ -84,6 +99,7 @@ class GesturePredictor:
             "training_info": self.training_info,
             "evaluation": self.metrics,
             "window_size": int(self.metadata["window_size"]),
-            "window_selection": "mean_probabilities_all_windows",
+            "window_selection": "uniform_windows" if available_windows > max_windows else "mean_probabilities_all_windows",
+            "available_windows": available_windows,
             "windows_used": len(starts),
         }

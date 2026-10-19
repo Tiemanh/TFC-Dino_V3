@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from config_files.InGesture_Configs import Config
 from dataloader import Load_Dataset
-from loss import NTXentLoss_poly
+from loss import NTXentLoss_poly, ClassBalancedFocalLoss
 from model import TFC, target_classifier
 
 
@@ -47,8 +47,8 @@ def run_pretrain(model, loader, optimizer, config, device, epochs, on_epoch=None
             on_epoch(epoch, {"loss": total / len(loader)})
 
 
-def run_finetune(model, classifier, loader, model_optimizer, classifier_optimizer, device, epochs, on_epoch=None):
-    criterion = nn.CrossEntropyLoss()
+def run_finetune(model, classifier, loader, model_optimizer, classifier_optimizer, device, epochs, on_epoch=None, criterion=None):
+    criterion = criterion if criterion is not None else nn.CrossEntropyLoss()
     for epoch in range(1, epochs + 1):
         model.train()
         classifier.train()
@@ -145,8 +145,13 @@ def main():
     parser.add_argument("--validation-per-class", type=int, default=0, help="0=all validation windows")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
+    parser.add_argument("--classification-loss", choices=["cb_focal", "cross_entropy"], default="cb_focal")
+    parser.add_argument("--focal-gamma", type=float, default=2.0)
+    parser.add_argument("--cb-beta", type=float, default=0.999)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
+    if not 0 <= args.cb_beta < 1 or args.focal_gamma < 0:
+        parser.error("Need 0 <= cb-beta < 1 and focal-gamma >= 0")
     if sum((bool(args.local_model_dir), args.smoke_test, args.from_scratch)) > 1:
         parser.error("Choose only one: --local-model-dir, --from-scratch, --smoke-test")
     if args.pretrain_epochs < 0 or args.finetune_epochs < 1:
@@ -209,9 +214,15 @@ def main():
     if (label_counts == 0).any():
         raise ValueError("Every gesture class must have training examples")
     sample_weights = (1.0 / label_counts)[supervised_data.y_data.long()]
-    sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+    # CB focal already corrects class imbalance. Do not also oversample rare
+    # classes, which would apply the same correction twice.
+    sampler = (WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
+               if args.classification_loss == "cross_entropy" else None)
     # BatchNorm in projectors requires at least two examples per training batch.
-    train_loader = DataLoader(supervised_data, batch_size=batch_size, sampler=sampler, drop_last=True)
+    train_loader = DataLoader(supervised_data, batch_size=batch_size, sampler=sampler,
+                              shuffle=sampler is None, drop_last=True)
+    classification_criterion = (ClassBalancedFocalLoss(label_counts, args.cb_beta, args.focal_gamma).to(device)
+                                if args.classification_loss == "cb_focal" else nn.CrossEntropyLoss())
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False)
     val_loader = DataLoader(Load_Dataset(val_payload, config, "fine_tune_test"), batch_size=batch_size,
                             shuffle=False) if val_payload else None
@@ -241,7 +252,8 @@ def main():
     run_pretrain(model, pretrain_loader, model_optimizer, config, device, args.pretrain_epochs,
                  on_epoch=lambda epoch, values: record_epoch("pretrain", epoch, values))
     run_finetune(model, classifier, train_loader, model_optimizer, classifier_optimizer, device, args.finetune_epochs,
-                 on_epoch=lambda epoch, values: record_epoch("finetune", epoch, values))
+                 on_epoch=lambda epoch, values: record_epoch("finetune", epoch, values),
+                 criterion=classification_criterion)
     if best_epoch is not None:
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
         model.load_state_dict(checkpoint["model"])
@@ -261,6 +273,9 @@ def main():
         "model_options": {"input_channels": 3, "image_size": config.dinov3_image_size, "freeze_backbone": True},
         "metrics": classification_metrics(confusion, metadata["class_names"]),
         "training_info": {
+            "classification_loss": args.classification_loss,
+            "focal_gamma": args.focal_gamma, "cb_beta": args.cb_beta,
+            "class_counts": label_counts.tolist(),
             "initialization": "random_full_vits16" if args.from_scratch else "smoke_test" if args.smoke_test else "pretrained",
             "pretrain_epochs": args.pretrain_epochs, "finetune_epochs": args.finetune_epochs,
             "train_windows_used": len(train_payload["labels"]),

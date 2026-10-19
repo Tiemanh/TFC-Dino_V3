@@ -14,6 +14,7 @@ def main():
     parser.add_argument('--pretrain-epochs', type=int, default=2)
     parser.add_argument('--finetune-epochs', type=int, default=12)
     parser.add_argument('--train-per-class', type=int, default=256)
+    parser.add_argument('--classification-loss', choices=['cb_focal', 'cross_entropy'], default='cb_focal')
     args = parser.parse_args()
     if (args.output_dir / 'model_bundle.pt').exists():
         print('Model already exists. Use --output-dir with a new folder to preserve this model.')
@@ -28,7 +29,8 @@ def main():
                '--from-scratch', '--data-dir', str(args.data_dir), '--output-dir', str(args.output_dir),
                '--image-size', '64', '--batch-size', '16', '--train-per-class', str(args.train_per_class),
                '--validation-per-class', '64', '--pretrain-epochs', str(args.pretrain_epochs),
-               '--finetune-epochs', str(args.finetune_epochs), '--learning-rate', '0.0003']
+               '--finetune-epochs', str(args.finetune_epochs), '--learning-rate', '0.0003',
+               '--classification-loss', args.classification_loss]
     print('Offline full DINOv3 ViT-S/16 baseline: no pretrained image weights. Keep this window open.', flush=True)
     return subprocess.call(command, cwd=ROOT)
 

@@ -25,6 +25,7 @@ def main():
     lines = [
         '# Kết quả baseline TF-C + DINOv3 học từ đầu', '',
         f"Nguồn khởi tạo: `{info['initialization']}`. Dataset: {info['dataset']}.", '',
+        f"Loss phân loại: `{info.get('classification_loss', 'cross_entropy')}`.", '',
         'Đây là kết quả đo thật trên InGesture v5 công khai.',
         'Hai backbone đầy đủ ViT-S/16 được học từ đầu, không có pretrained ảnh.', '',
         f"- Train dùng: {info['train_windows_used']} cửa sổ.",

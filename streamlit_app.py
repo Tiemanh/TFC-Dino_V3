@@ -6,6 +6,9 @@ import hashlib
 import html
 import os
 import sys
+import json
+import logging
+import time
 from pathlib import Path
 
 import numpy as np
@@ -72,7 +75,7 @@ st.markdown(
 )
 
 
-@st.cache_resource(show_spinner="Đang nạp model TF-C + DINOv3…")
+@st.cache_resource(show_spinner="Đang nạp model TF-C + DINOv3…", max_entries=1)
 def load_predictor(model_path: str) -> GesturePredictor:
     path = Path(model_path)
     if not path.is_file():
@@ -117,6 +120,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.caption("1 · Chọn dữ liệu   →   2 · Xem tín hiệu   →   3 · Chạy dự đoán")
+st.link_button("Chia sẻ: mở ứng dụng công khai", "https://tfc-dinov3-gesture.streamlit.app/")
+
 try:
     predictor = load_predictor(str(MODEL_PATH))
     model_error = None
@@ -155,6 +161,7 @@ with left:
             f'<span>Tối thiểu {required_samples} mẫu cảm biến.</span></div>',
             unsafe_allow_html=True,
         )
+        st.caption("CSV/TXT tối đa 5 MB và 100.000 mẫu. File dài được lấy tối đa 64 cửa sổ trải đều để giữ ứng dụng ổn định.")
 
         file_bytes = None
         file_name = None
@@ -199,9 +206,17 @@ with middle:
             elif predictor is None:
                 st.error("Model chưa sẵn sàng nên không thể dự đoán.")
             elif st.button("▶ Run Prediction", type="primary", use_container_width=True):
-                with st.spinner("DINOv3 đang phân tích time và frequency views…"):
-                    st.session_state["prediction"] = predictor.predict(xyz)
-                    st.session_state["prediction_digest"] = digest
+                reset_prediction()
+                try:
+                    with st.spinner("Đang xử lý… Nếu có nhiều người truy cập, vui lòng chờ đến lượt."):
+                        started = time.monotonic()
+                        result = predictor.predict(xyz)
+                        result["elapsed_seconds"] = round(time.monotonic() - started, 2)
+                        st.session_state["prediction"] = result
+                        st.session_state["prediction_digest"] = digest
+                except Exception:
+                    logging.exception("Gesture prediction failed")
+                    st.error("Chưa xử lý được file này. Hãy thử file ngắn hơn hoặc CSV mẫu, rồi chạy lại.")
             st.caption(f"Đã đọc {len(xyz):,} mẫu từ {file_name}.")
 
 with right:
@@ -228,6 +243,10 @@ with right:
             st.markdown("#### Class Probabilities")
             st.markdown(probability_rows(result["probabilities"]), unsafe_allow_html=True)
             st.caption(f"Dự đoán trung bình trên {result['windows_used']} cửa sổ tín hiệu.")
+            if result.get("available_windows", 0) > result["windows_used"]:
+                st.caption(f"Đã lấy trải đều {result['windows_used']}/{result['available_windows']} cửa sổ trong toàn bộ file.")
+            st.download_button("Tải kết quả JSON", json.dumps(result, ensure_ascii=False, indent=2),
+                               file_name="gesture_prediction.json", mime="application/json")
         else:
             st.markdown(
                 '<div class="result-card"><strong>Predicted</strong>'
@@ -238,6 +257,7 @@ with right:
 
         if predictor:
             metrics = predictor.metrics
+            loss_name = predictor.training_info.get("classification_loss", "cross_entropy")
             st.markdown(
                 '<div class="model-state"><span class="status-ok">● Model đã sẵn sàng</span><br>'
                 'Baseline TF-C + DINOv3 ViT-S/16 học từ đầu trên InGesture; '
@@ -246,6 +266,8 @@ with right:
                 'Chưa dùng trọng số pretrained.</div>',
                 unsafe_allow_html=True,
             )
+            st.caption("Loss của model đang chạy: " +
+                       ("Class-Balanced Focal Loss" if loss_name == "cb_focal" else "Cross Entropy (baseline)"))
         else:
             st.markdown(
                 f'<div class="model-state"><span class="status-warn">● Chưa nạp được model</span><br>'

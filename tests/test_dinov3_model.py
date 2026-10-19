@@ -129,10 +129,14 @@ class DualDINOv3Tests(unittest.TestCase):
             predictor = GesturePredictor(bundle_path)
             result = predictor.predict(torch.randn(64, 3).numpy())
             long_result = predictor.predict(torch.randn(160, 3).numpy())
+            bounded = predictor.predict(torch.randn(4096, 3).numpy(), max_windows=5, batch_size=2)
         self.assertIn(result["label"], bundle["class_names"])
         self.assertEqual(len(result["probabilities"]), 8)
         self.assertAlmostEqual(sum(result["probabilities"].values()), 1.0, places=5)
         self.assertGreater(long_result["windows_used"], 1)
+        self.assertEqual(bounded["windows_used"], 5)
+        self.assertGreater(bounded["available_windows"], 5)
+        self.assertEqual(bounded["window_selection"], "uniform_windows")
         self.assertAlmostEqual(sum(long_result["probabilities"].values()), 1.0, places=5)
 
 
