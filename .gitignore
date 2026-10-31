@@ -21,6 +21,8 @@ tmp-runtime/
 /data/raw/*
 /data/external/InGesture/
 /weights/*
+/reports/data_visualization_notebook/
+/reports/data_visualization_review.png
 *.safetensors
 *.pth
 !artifacts/gesture_model/model_bundle.pt

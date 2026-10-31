@@ -1,0 +1,13 @@
+{
+  "id": "nguyntinmnh41/tfc-dinov3-ingesture-visualization",
+  "title": "InGesture Dataset Visualization for TF-C and DINOv3",
+  "code_file": "ingesture_visualization.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": ["nguyntinmnh41/gesture-dataset"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

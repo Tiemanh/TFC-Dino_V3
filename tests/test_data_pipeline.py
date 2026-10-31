@@ -53,6 +53,13 @@ class GestureDataPipelineTests(unittest.TestCase):
         classifier_optimizer = torch.optim.Adam(classifier.parameters(), lr=1e-4)
         run_pretrain(model, pretrain_loader, model_optimizer, config, torch.device("cpu"), 1)
         run_finetune(model, classifier, train_loader, model_optimizer, classifier_optimizer, torch.device("cpu"), 1)
+        # Joint classification + TF-C must backpropagate through real augmented
+        # views, including the trainable image adapters, without NaN loss.
+        from loss import ClassBalancedFocalLoss
+        config.contrastive_objective='projected_multiview'
+        run_finetune(model, classifier, pretrain_loader, model_optimizer, classifier_optimizer,
+                     torch.device("cpu"), 1, criterion=ClassBalancedFocalLoss([1] * 8),
+                     tfc_weight=0.1, config=config)
 
     def test_ingesture_split_segment_and_normalize(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as temporary:

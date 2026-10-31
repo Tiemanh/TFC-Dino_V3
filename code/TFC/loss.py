@@ -3,6 +3,36 @@ import torch.nn.functional as F
 import numpy as np
 
 
+class ProjectedMultiViewTFCLoss(torch.nn.Module):
+    """TF-C objective on all four trainable projector outputs.
+
+    Pairwise symmetric NT-Xent; cross-domain loss averages the four original/
+    augmented combinations. This is not Meta's teacher-student DINO loss.
+    """
+    def __init__(self, temperature=0.2):
+        super().__init__()
+        if not np.isfinite(temperature) or temperature<=0:
+            raise ValueError('temperature must be finite and positive')
+        self.temperature=temperature
+
+    def paired(self,a,b):
+        if a.ndim!=2 or a.shape!=b.shape or len(a)<2:
+            raise ValueError('Need matching [batch >= 2, embedding] views')
+        batch=len(a)
+        features=F.normalize(torch.cat([a,b]).float(),dim=1)
+        logits=features@features.T/self.temperature
+        logits=logits.masked_fill(torch.eye(2*batch,device=a.device,dtype=torch.bool),float('-inf'))
+        targets=(torch.arange(2*batch,device=a.device)+batch)%(2*batch)
+        return F.cross_entropy(logits,targets)
+
+    def forward(self,zt,zf,zt_aug,zf_aug):
+        time=self.paired(zt,zt_aug)
+        frequency=self.paired(zf,zf_aug)
+        cross=torch.stack([self.paired(a,b) for a,b in
+                          [(zt,zf),(zt,zf_aug),(zt_aug,zf),(zt_aug,zf_aug)]]).mean()
+        return .2*(time+frequency)+cross
+
+
 class ClassBalancedFocalLoss(torch.nn.Module):
     """Effective-number class weights multiplied by focal cross entropy.
 

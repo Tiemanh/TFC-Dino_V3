@@ -1,0 +1,145 @@
+{
+  "dataset": "InGesture v5",
+  "doi": "10.17632/fdxst56tcj.5",
+  "license": "CC BY 4.0",
+  "sensor": "WT901BLECL5 wrist-worn IMU",
+  "sampling_rate_hz": 200,
+  "class_names": [
+    "other",
+    "fluid_intake",
+    "answering_cell_phone",
+    "scratching_head",
+    "passing_hand_over_face",
+    "adjusting_glasses_touching_temples",
+    "holding_chin",
+    "stretching_with_hands_behind_neck"
+  ],
+  "label_to_id": {
+    "other": 0,
+    "fluid_intake": 1,
+    "answering_cell_phone": 2,
+    "scratching_head": 3,
+    "passing_hand_over_face": 4,
+    "adjusting_glasses_touching_temples": 5,
+    "holding_chin": 6,
+    "stretching_with_hands_behind_neck": 7
+  },
+  "window_size": 206,
+  "stride": 103,
+  "channels": [
+    "x",
+    "y",
+    "z"
+  ],
+  "normalization": {
+    "clip_low": [
+      -1.2998409271240234,
+      -1.1988223791122437,
+      -0.6792421340942383
+    ],
+    "clip_high": [
+      1.0139989852905273,
+      1.1063685417175293,
+      1.2158466577529907
+    ],
+    "mean": [
+      -0.21468223631381989,
+      -0.15018688142299652,
+      0.4967299699783325
+    ],
+    "std": [
+      0.44147568941116333,
+      0.6169834136962891,
+      0.3742300868034363
+    ]
+  },
+  "train_subjects": [
+    "subject_1",
+    "subject_11",
+    "subject_12",
+    "subject_13",
+    "subject_14",
+    "subject_15",
+    "subject_16",
+    "subject_17",
+    "subject_19",
+    "subject_2",
+    "subject_20",
+    "subject_24",
+    "subject_25",
+    "subject_27",
+    "subject_29",
+    "subject_30",
+    "subject_31",
+    "subject_32",
+    "subject_33",
+    "subject_34",
+    "subject_35",
+    "subject_36",
+    "subject_38",
+    "subject_41",
+    "subject_42",
+    "subject_43",
+    "subject_44",
+    "subject_49",
+    "subject_5",
+    "subject_7",
+    "subject_8",
+    "subject_9"
+  ],
+  "test_subjects": [
+    "subject_18",
+    "subject_21",
+    "subject_26",
+    "subject_28",
+    "subject_40",
+    "subject_46",
+    "subject_47",
+    "subject_48",
+    "subject_50",
+    "subject_6"
+  ],
+  "train_windows": 44862,
+  "test_windows": 15658,
+  "train_windows_by_class": {
+    "other": 33821,
+    "fluid_intake": 5738,
+    "answering_cell_phone": 2960,
+    "scratching_head": 427,
+    "passing_hand_over_face": 437,
+    "adjusting_glasses_touching_temples": 453,
+    "holding_chin": 477,
+    "stretching_with_hands_behind_neck": 549
+  },
+  "test_windows_by_class": {
+    "other": 11924,
+    "fluid_intake": 1922,
+    "answering_cell_phone": 966,
+    "scratching_head": 149,
+    "passing_hand_over_face": 169,
+    "adjusting_glasses_touching_temples": 158,
+    "holding_chin": 178,
+    "stretching_with_hands_behind_neck": 192
+  },
+  "validation_subjects": [
+    "subject_10",
+    "subject_22",
+    "subject_23",
+    "subject_3",
+    "subject_37",
+    "subject_39",
+    "subject_4",
+    "subject_45"
+  ],
+  "validation_windows": 8334,
+  "validation_windows_by_class": {
+    "other": 6242,
+    "fluid_intake": 1031,
+    "answering_cell_phone": 586,
+    "scratching_head": 84,
+    "passing_hand_over_face": 82,
+    "adjusting_glasses_touching_temples": 97,
+    "holding_chin": 94,
+    "stretching_with_hands_behind_neck": 118
+  }
+}

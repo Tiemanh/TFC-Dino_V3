@@ -143,15 +143,19 @@ with left:
             key="sensor_file",
             on_change=select_uploaded_file,
         )
+        sample_choices={'CSV mẫu ban đầu':SAMPLE_PATH}
+        sample_choices.update({format_label(p.stem):p for p in sorted((ROOT/'sample_data/examples').glob('*.csv'))})
+        sample_label=st.selectbox('Chọn dữ liệu mẫu',list(sample_choices),on_change=reset_prediction)
+        sample_path=sample_choices[sample_label]
         sample_col, download_col = st.columns(2)
         if sample_col.button("Dùng CSV mẫu", use_container_width=True):
             st.session_state["use_sample"] = True
             reset_prediction()
-        if SAMPLE_PATH.is_file():
+        if sample_path.is_file():
             download_col.download_button(
                 "Tải CSV mẫu",
-                data=SAMPLE_PATH.read_bytes(),
-                file_name="gesture_example.csv",
+                data=sample_path.read_bytes(),
+                file_name=sample_path.name,
                 mime="text/csv",
                 use_container_width=True,
             )
@@ -165,10 +169,12 @@ with left:
 
         file_bytes = None
         file_name = None
-        if st.session_state.get("use_sample") and SAMPLE_PATH.is_file():
-            file_bytes = SAMPLE_PATH.read_bytes()
-            file_name = SAMPLE_PATH.name
+        if st.session_state.get("use_sample") and sample_path.is_file():
+            file_bytes = sample_path.read_bytes()
+            file_name = sample_path.name
             st.success("Đang sử dụng CSV mẫu InGesture.")
+            if sample_path.parent.name=='examples':
+                st.caption(f'Nhãn của recording nguồn: {sample_label}. Đây là mẫu train để kiểm tra thao tác; dự đoán có thể khác nhãn.')
         elif uploaded is not None:
             file_bytes = uploaded.getvalue()
             file_name = uploaded.name
@@ -258,16 +264,21 @@ with right:
         if predictor:
             metrics = predictor.metrics
             loss_name = predictor.training_info.get("classification_loss", "cross_entropy")
+            initialization=predictor.training_info.get('initialization','unknown')
+            model_description=('TF-C + DINOv3 ViT-S/16 với pretrained backbone' if initialization=='pretrained'
+                               else 'Baseline TF-C + DINOv3 ViT-S/16 học từ đầu' if initialization=='random_full_vits16'
+                               else 'TF-C + DINOv3 (chưa có thông tin khởi tạo)')
             st.markdown(
                 '<div class="model-state"><span class="status-ok">● Model đã sẵn sàng</span><br>'
-                'Baseline TF-C + DINOv3 ViT-S/16 học từ đầu trên InGesture; '
+                f'{html.escape(model_description)} trên InGesture; '
                 f'accuracy {metrics.get("test_accuracy", 0):.1%}, '
                 f'macro F1 {metrics.get("macro_f1", 0):.1%}. '
-                'Chưa dùng trọng số pretrained.</div>',
+                '</div>',
                 unsafe_allow_html=True,
             )
             st.caption("Loss của model đang chạy: " +
-                       ("Class-Balanced Focal Loss" if loss_name == "cb_focal" else "Cross Entropy (baseline)"))
+                       {'cb_focal':'Class-Balanced Focal Loss','cb_ce':'Class-Balanced Cross Entropy',
+                        'cross_entropy':'Cross Entropy (baseline)'}.get(loss_name,loss_name))
         else:
             st.markdown(
                 f'<div class="model-state"><span class="status-warn">● Chưa nạp được model</span><br>'

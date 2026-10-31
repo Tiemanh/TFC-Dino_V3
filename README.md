@@ -151,6 +151,43 @@ Tham khảo: [Class-Balanced Loss](https://arxiv.org/abs/1901.05555),
 
 ## 5. Cách sử dụng DINOv3
 
+### Nghiên cứu loss và joint fine-tuning
+
+DINOv3 là backbone; loss DINO/iBOT/Gram anchoring của Meta không tự động là
+loss phù hợp cho phân loại cử chỉ. Phân tích nguồn và giới hạn thực nghiệm ở
+[`reports/loss_research/RESEARCH.md`](reports/loss_research/RESEARCH.md).
+
+Code bổ sung `--classification-loss cb_ce`, `--sampler shuffle` và
+`--finetune-tfc-weight 0.1` để so sánh joint objective
+`L_classification + lambda * [0.2*(L_time+L_frequency)+L_cross]`.
+Lambda mặc định 0 giữ cấu hình của model đã xuất. Chọn lambda/gamma/beta bằng
+validation; chưa có bằng chứng cho một cấu hình tối ưu tuyệt đối.
+
+`tools/compare_loss_configs.py` chạy ablation cùng sampler/seed/tập chia;
+`--validation-only` không đọc test, không xuất bundle deploy. Xem lệnh và
+quy trình ba seed trong báo cáo nghiên cứu.
+
+### Loss bổ sung sau khi đối chiếu bài TF-C + DINOv3 tham khảo
+
+`code/TFC/loss.py` bổ sung `ProjectedMultiViewTFCLoss`. Chọn bằng
+`--contrastive-objective projected_multiview` trong `train_gestures.py`:
+
+```text
+Lt = NT-Xent(zt, zt_aug)
+Lf = NT-Xent(zf, zf_aug)
+Lcross = mean[NT-Xent(zt,zf), NT-Xent(zt,zf_aug),
+              NT-Xent(zt_aug,zf), NT-Xent(zt_aug,zf_aug)]
+Lpretrain = 0.2*(Lt + Lf) + Lcross
+Lfinetune = Lclassification + lambda*Lpretrain
+```
+
+Cả bốn tensor projector đều nhận gradient. Đây là loss TF-C có mở rộng
+multi-view, không phải loss teacher–student dùng để Meta pretrain DINOv3.
+Mặc định `legacy` vẫn khớp model hiện có. Tùy chọn mới đã kiểm tra loss,
+positive pairing và backward; chưa có kết quả chất lượng để thay model deploy.
+Tham khảo [repo TF-C-DINOv3](https://github.com/vuvandat109/TF-C-DINOv3);
+đối chiếu chi tiết ở [`reports/reference_review/NEW_REFERENCE.md`](reports/reference_review/NEW_REFERENCE.md).
+
 Code hỗ trợ hai chế độ:
 
 ### DINOv3 pretrained từ máy
@@ -235,6 +272,45 @@ ghi đè model cũ.
 
 ## 8. Dữ liệu
 
+### Kaggle Dataset và Visualization Notebook
+
+- Dataset: [Gesture Dataset](https://www.kaggle.com/datasets/nguyntinmnh41/gesture-dataset).
+- Notebook đã chạy trên dữ liệu thật: [`kaggle/ingesture_visualization.ipynb`](kaggle/ingesture_visualization.ipynb).
+- Mười bốn biểu đồ và kiểm kê: [`reports/data_visualization/`](reports/data_visualization/).
+
+Trên Kaggle: mở dataset → **New Notebook** → **File / Import Notebook** và chọn
+file `.ipynb` trên. Đảm bảo mục **Input** có `nguyntinmnh41/gesture-dataset`;
+chọn **Run All**, sau đó **Save Version / Save & Run All**. Chỉ đặt Public khi
+đã kiểm tra toàn bộ outputs. Nộp hai link: Dataset và Notebook Visualization.
+Notebook trong repo đã có outputs chạy local; link public Notebook chỉ có sau
+khi tạo và lưu thành công trên Kaggle, không phải link Dataset hiện tại.
+
+Notebook học bố cục của [bài Kaggle tham khảo](https://www.kaggle.com/code/loanhviet/sentinel-2-rpg-dataset-visualization):
+giới thiệu → inventory/format/pool → mẫu tín hiệu và nhãn → temporal/multi-subject
+→ coverage/phân bố lớp/thời lượng → mean ± SD theo cử chỉ → kết luận.
+Có thêm chuẩn hóa/tương quan và ảnh adapter DINOv3. Mẫu minh họa dùng seed 42,
+tối đa 12 subject train mỗi lớp, tên file lưu trong `sample_pool.csv`.
+Các thống kê toàn dataset dùng đủ inventory, không dùng số lượng sample pool.
+Đối chiếu thêm [Sensor Logger Visualization](https://www.kaggle.com/code/vuvandat000099/sensor-logger-five-gesture-dataset-visualization),
+notebook bổ sung PCA của 12 đặc trưng thống kê, RMS theo kênh, STFT và audit
+recording trùng/đứng yên. PCA dùng pool train, không thể diễn giải thành accuracy;
+audit trùng ở mức recording, chưa phải cửa sổ hay mẫu gần giống.
+Kết quả audit bản local: 85 recording trùng sau lần đầu (84 train, 1 test),
+không có nhãn mâu thuẫn và không có hash recording chung giữa các split.
+Các số đếm và metric hiện tại vẫn dùng bản dữ liệu chưa deduplicate;
+thay đổi tập dữ liệu cần huấn luyện/đánh giá lại.
+Không cần GPU, model weights hoặc Hugging Face. Chạy EDA local:
+
+```powershell
+python -m pip install -r requirements-analysis.txt
+python tools/visualize_ingesture.py
+python tools/build_visualization_notebook.py
+```
+
+Notebook tự chứa code và metadata về split/normalization. Nếu cấu trúc dataset
+khác bản InGesture v5 đã dùng, chương trình dừng khi số cửa sổ không khớp để
+tránh xuất biểu đồ sai. `kernel-metadata.json` gắn đúng dataset, mặc định private.
+
 Dự án hiện dùng **InGesture v5** làm dữ liệu thực nghiệm chính. Mỗi mẫu gồm
 chuỗi gia tốc X/Y/Z và một trong tám nhãn cử chỉ. Dữ liệu được làm sạch, chuẩn
 hóa và cắt thành cửa sổ 206 mẫu trước khi huấn luyện.
@@ -258,6 +334,12 @@ Mở `http://localhost:8501`, tải CSV/TXT có các cột `timestamp, x, y, z`,
 chọn **Run Prediction**. Ứng dụng hiển thị tín hiệu miền thời gian, phổ tần số,
 nhãn dự đoán, độ tin cậy và xác suất của tám lớp.
 
+Ô **Chọn dữ liệu mẫu** có thêm tám CSV cử chỉ thật trong `sample_data/examples/`.
+Nguồn, split và nhãn gốc nằm trong `sample_data/example_manifest.csv`. Timestamp
+được sinh theo tần số danh định; X/Y/Z lấy từ recording gốc. Các file này là mẫu
+train để kiểm tra luồng ứng dụng; không lấy tỷ lệ đoán đúng trên chúng làm
+test accuracy. Có thể tạo lại bằng `python tools/export_demo_samples.py`.
+
 Bản triển khai công khai:
 [https://tfc-dinov3-gesture.streamlit.app/](https://tfc-dinov3-gesture.streamlit.app/)
 
@@ -271,7 +353,42 @@ xử lý tuần tự và tối đa 64 cửa sổ trải đều mỗi file, batch
 Các giới hạn này giúp kiểm soát RAM khi nhiều người dùng; xác suất trả về
 với file dài là trung bình trên các cửa sổ được chọn.
 
-## 10. Trạng thái model hiện tại
+## 10. Docker và CI/CD
+
+Image production chạy giao diện Streamlit cùng model đã xuất ở cổng `8501`:
+
+```powershell
+docker build -t tfc-dinov3-gesture:local .
+docker run --rm -p 8501:8501 tfc-dinov3-gesture:local
+```
+
+Mở `http://localhost:8501`. Container có health check tại
+`/_stcore/health`, chạy bằng user không có quyền root và chỉ chứa code inference,
+file mẫu cùng model bundle. Dataset huấn luyện không được đóng gói vào image.
+
+Pipeline [`.github/workflows/ci.yml`](.github/workflows/ci.yml) tự động chạy khi
+push hoặc tạo pull request vào `main`: cài dependencies, compile source, chạy
+unit test và xác nhận Docker image build thành công.
+
+Pipeline [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
+build và public image `linux/amd64` lên Docker Hub khi chạy thủ công hoặc push
+tag `v*`. Repository GitHub cần hai Actions secrets:
+
+- `DOCKERHUB_USERNAME`: tên tài khoản Docker Hub.
+- `DOCKERHUB_TOKEN`: access token Docker Hub có quyền Read & Write.
+
+Image được gắn ba dạng tag: `latest`, tag phiên bản như `v1.0.0` và
+`sha-<commit>`. Ví dụ sau khi public:
+
+```powershell
+docker pull <dockerhub-username>/tfc-dinov3-gesture:latest
+docker run --rm -p 8501:8501 <dockerhub-username>/tfc-dinov3-gesture:latest
+```
+
+Model 166 MB được quản lý bằng Git LFS; cả hai workflow đều bật tải LFS trước
+khi kiểm thử hoặc build để tránh đóng gói nhầm file LFS pointer.
+
+## 11. Trạng thái model hiện tại
 
 Model hiện có là baseline kỹ thuật để xác nhận toàn bộ pipeline chạy thật từ
 file đầu vào đến kết quả dự đoán. Model dùng hai DINOv3 ViT-S/16 khởi tạo ngẫu
@@ -294,7 +411,7 @@ Các chỉ số này không chứng minh pretrained DINOv3 cải thiện TF-C. M
 lợi ích của pretrained cần nạp checkpoint hợp lệ, huấn luyện lại với cùng cách
 chia dữ liệu và so sánh trên cùng test set.
 
-## 11. Tài liệu tham khảo
+## 12. Tài liệu tham khảo
 
 - Xiang Zhang và cộng sự, [*Self-Supervised Contrastive Pre-Training for Time
   Series via Time-Frequency Consistency*](https://openreview.net/forum?id=OJ4mMfGKLN),

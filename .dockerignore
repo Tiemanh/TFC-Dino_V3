@@ -1,10 +1,16 @@
 .git
+.github
 .venv
 **/__pycache__
 data
 datasets
 weights
 tests
+reports
+kaggle
+tools
+environments
+images
 code/baselines
 code/experiments_logs
 artifacts/*

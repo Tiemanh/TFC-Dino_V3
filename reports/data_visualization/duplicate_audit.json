@@ -1,0 +1,8 @@
+{
+  "scope": "Exact cleaned float32 X/Y/Z recording arrays; not window-level or approximate duplicates",
+  "recordings": 5345,
+  "constant_recordings": 0,
+  "duplicate_recordings_after_first": 85,
+  "unique_hashes_shared_across_subject_splits": 0,
+  "note": "Matching constant signals may occur naturally; inspect provenance before interpreting leakage."
+}

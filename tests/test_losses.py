@@ -6,10 +6,26 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code" / "TFC"))
-from loss import ClassBalancedFocalLoss
+from loss import ClassBalancedFocalLoss, ProjectedMultiViewTFCLoss
 
 
 class FocalLossTests(unittest.TestCase):
+    def test_projected_views_all_receive_gradients(self):
+        views=[torch.randn(4,12,requires_grad=True) for _ in range(4)]
+        loss=ProjectedMultiViewTFCLoss()(*views)
+        loss.backward()
+        self.assertTrue(torch.isfinite(loss))
+        for view in views:
+            self.assertTrue(torch.isfinite(view.grad).all())
+            self.assertGreater(float(view.grad.abs().sum()),0)
+
+    def test_ntxent_positive_pairing_and_batch_validation(self):
+        criterion=ProjectedMultiViewTFCLoss()
+        identity=torch.eye(4)
+        self.assertLess(float(criterion.paired(identity,identity)),
+                        float(criterion.paired(identity,identity.roll(1,0))))
+        torch.testing.assert_close(criterion.paired(identity,identity),criterion.paired(identity*3,identity*2))
+        with self.assertRaises(ValueError):criterion.paired(identity[:1],identity[:1])
     def test_recovers_cross_entropy(self):
         logits = torch.randn(6, 3, requires_grad=True)
         labels = torch.arange(6) % 3

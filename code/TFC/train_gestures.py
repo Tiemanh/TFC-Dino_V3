@@ -17,13 +17,15 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from config_files.InGesture_Configs import Config
 from dataloader import Load_Dataset
-from loss import NTXentLoss_poly, ClassBalancedFocalLoss
+from loss import NTXentLoss_poly, ClassBalancedFocalLoss, ProjectedMultiViewTFCLoss
 from model import TFC, target_classifier
 
 
 def contrastive_loss(model, time_view, time_aug, freq_view, freq_aug, batch_size, config, device):
     h_t, z_t, h_f, z_f = model(time_view, freq_view)
-    h_t_aug, _, h_f_aug, _ = model(time_aug, freq_aug)
+    h_t_aug, z_t_aug, h_f_aug, z_f_aug = model(time_aug, freq_aug)
+    if getattr(config,'contrastive_objective','legacy')=='projected_multiview':
+        return ProjectedMultiViewTFCLoss(config.Context_Cont.temperature)(z_t,z_f,z_t_aug,z_f_aug)
     criterion = NTXentLoss_poly(device, batch_size, config.Context_Cont.temperature, True)
     return 0.2 * (criterion(h_t, h_t_aug) + criterion(h_f, h_f_aug)) + criterion(z_t, z_f)
 
@@ -47,13 +49,16 @@ def run_pretrain(model, loader, optimizer, config, device, epochs, on_epoch=None
             on_epoch(epoch, {"loss": total / len(loader)})
 
 
-def run_finetune(model, classifier, loader, model_optimizer, classifier_optimizer, device, epochs, on_epoch=None, criterion=None):
+def run_finetune(model, classifier, loader, model_optimizer, classifier_optimizer, device, epochs, on_epoch=None, criterion=None,
+                 tfc_weight=0.0, config=None):
     criterion = criterion if criterion is not None else nn.CrossEntropyLoss()
+    if tfc_weight < 0 or (tfc_weight > 0 and config is None):
+        raise ValueError("Joint TF-C needs non-negative weight and a config")
     for epoch in range(1, epochs + 1):
         model.train()
         classifier.train()
         total, correct, count = 0.0, 0, 0
-        for step, (time_view, labels, _, freq_view, _) in enumerate(loader, 1):
+        for step, (time_view, labels, time_aug, freq_view, freq_aug) in enumerate(loader, 1):
             time_view, freq_view = time_view.float().to(device), freq_view.float().to(device)
             labels = labels.long().to(device)
             model_optimizer.zero_grad(set_to_none=True)
@@ -61,6 +66,12 @@ def run_finetune(model, classifier, loader, model_optimizer, classifier_optimize
             _, z_t, _, z_f = model(time_view, freq_view)
             logits = classifier(torch.cat((z_t, z_f), dim=1))
             loss = criterion(logits, labels)
+            if tfc_weight:
+                # Keep the representation objective active during supervised
+                # adaptation. This is optional and must be selected on validation.
+                loss = loss + tfc_weight * contrastive_loss(
+                    model, time_view, time_aug.float().to(device), freq_view,
+                    freq_aug.float().to(device), len(labels), config, device)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(list(model.parameters()) + list(classifier.parameters()), 5.0)
             model_optimizer.step()
@@ -145,11 +156,19 @@ def main():
     parser.add_argument("--validation-per-class", type=int, default=0, help="0=all validation windows")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--learning-rate", type=float, default=1e-4)
-    parser.add_argument("--classification-loss", choices=["cb_focal", "cross_entropy"], default="cb_focal")
+    parser.add_argument("--classification-loss", choices=["cb_focal", "cb_ce", "cross_entropy"], default="cb_focal")
     parser.add_argument("--focal-gamma", type=float, default=2.0)
     parser.add_argument("--cb-beta", type=float, default=0.999)
+    parser.add_argument("--finetune-tfc-weight", type=float, default=0.0,
+                        help="Joint objective: classification + weight * TF-C; 0 preserves deployed baseline")
+    parser.add_argument("--sampler", choices=["auto", "shuffle", "weighted"], default="auto")
+    parser.add_argument('--contrastive-objective',choices=['legacy','projected_multiview'],default='legacy')
+    parser.add_argument("--validation-only", action="store_true",
+                        help="Tune on validation only; do not read/evaluate test or export deployment bundle")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
+    if args.finetune_tfc_weight < 0:
+        parser.error("finetune-tfc-weight must be non-negative")
     if not 0 <= args.cb_beta < 1 or args.focal_gamma < 0:
         parser.error("Need 0 <= cb-beta < 1 and focal-gamma >= 0")
     if sum((bool(args.local_model_dir), args.smoke_test, args.from_scratch)) > 1:
@@ -176,15 +195,19 @@ def main():
     if len(metadata["class_names"]) != 8:
         raise ValueError("The prepared dataset must contain exactly 8 classes")
     train_payload = torch.load(args.data_dir / "train.pt", map_location="cpu", weights_only=False)
-    test_payload = torch.load(args.data_dir / "test.pt", map_location="cpu", weights_only=False)
+    test_payload = (None if args.validation_only else
+                    torch.load(args.data_dir / "test.pt", map_location="cpu", weights_only=False))
     train_payload = cap_per_class(train_payload, args.train_per_class, args.seed)
     validation_path = args.data_dir / "val.pt"
     val_payload = cap_per_class(torch.load(validation_path, map_location="cpu", weights_only=False),
                                 args.validation_per_class, args.seed) if validation_path.exists() else None
+    if args.validation_only and val_payload is None:
+        parser.error("validation-only requires val.pt")
     if len(train_payload["labels"]) < 2:
         raise ValueError("Training data must contain at least two windows")
 
     config = Config()
+    config.contrastive_objective=args.contrastive_objective
     config.TSlength_aligned = int(metadata["window_size"])
     config.dinov3_model_name = args.model_name
     config.dinov3_local_model_dir = args.local_model_dir
@@ -200,11 +223,12 @@ def main():
         raise ValueError("batch-size must be at least 2")
     device = torch.device(args.device)
     print(f"Device: {device}; source: {'random full ViT-S/16' if args.from_scratch else 'tiny test' if args.smoke_test else 'pretrained'}", flush=True)
-    print(f"Train={len(train_payload['labels'])}; validation={len(val_payload['labels']) if val_payload else 0}; test={len(test_payload['labels'])}", flush=True)
+    print(f"Train={len(train_payload['labels'])}; validation={len(val_payload['labels']) if val_payload else 0}; test={'not accessed' if test_payload is None else len(test_payload['labels'])}", flush=True)
 
     pretrain_data = Load_Dataset(train_payload, config, "pre_train", subset=False)
-    supervised_data = Load_Dataset(train_payload, config, "fine_tune_test", subset=False)
-    test_data = Load_Dataset(test_payload, config, "fine_tune_test", subset=False)
+    supervised_data = Load_Dataset(train_payload, config,
+                                  "pre_train" if args.finetune_tfc_weight else "fine_tune_test", subset=False)
+    test_data = Load_Dataset(test_payload, config, "fine_tune_test", subset=False) if test_payload is not None else None
     pretrain_loader = DataLoader(pretrain_data, batch_size=batch_size, shuffle=True, drop_last=True)
     # InGesture is strongly imbalanced because the neutral class is much larger.
     # Inverse-frequency sampling prevents the classifier from learning to always
@@ -216,17 +240,26 @@ def main():
     sample_weights = (1.0 / label_counts)[supervised_data.y_data.long()]
     # CB focal already corrects class imbalance. Do not also oversample rare
     # classes, which would apply the same correction twice.
+    sampler_name = ("weighted" if args.classification_loss == "cross_entropy" else "shuffle") if args.sampler == "auto" else args.sampler
+    if sampler_name == "weighted" and args.classification_loss != "cross_entropy":
+        parser.error("Use shuffle with CB Focal to avoid double reweighting")
     sampler = (WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
-               if args.classification_loss == "cross_entropy" else None)
+               if sampler_name == "weighted" else None)
     # BatchNorm in projectors requires at least two examples per training batch.
     train_loader = DataLoader(supervised_data, batch_size=batch_size, sampler=sampler,
                               shuffle=sampler is None, drop_last=True)
-    classification_criterion = (ClassBalancedFocalLoss(label_counts, args.cb_beta, args.focal_gamma).to(device)
-                                if args.classification_loss == "cb_focal" else nn.CrossEntropyLoss())
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False)
+    classification_criterion = (ClassBalancedFocalLoss(label_counts, args.cb_beta,
+                                0.0 if args.classification_loss == "cb_ce" else args.focal_gamma).to(device)
+                                if args.classification_loss != "cross_entropy" else nn.CrossEntropyLoss())
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, drop_last=False) if test_data is not None else None
     val_loader = DataLoader(Load_Dataset(val_payload, config, "fine_tune_test"), batch_size=batch_size,
                             shuffle=False) if val_payload else None
 
+    # Dataset augmentation can consume RNG differently for joint objectives.
+    # Reset here so matched loss runs start from identical network weights.
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     model = TFC(config).to(device)
     classifier = target_classifier(config).to(device)
     model_parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
@@ -253,11 +286,21 @@ def main():
                  on_epoch=lambda epoch, values: record_epoch("pretrain", epoch, values))
     run_finetune(model, classifier, train_loader, model_optimizer, classifier_optimizer, device, args.finetune_epochs,
                  on_epoch=lambda epoch, values: record_epoch("finetune", epoch, values),
-                 criterion=classification_criterion)
+                 criterion=classification_criterion, tfc_weight=args.finetune_tfc_weight, config=config)
     if best_epoch is not None:
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
         model.load_state_dict(checkpoint["model"])
         classifier.load_state_dict(checkpoint["classifier"])
+    if args.validation_only:
+        _, confusion = evaluate(model, classifier, val_loader, device)
+        report = {"selection_split": "validation", "test_accessed": False,
+                  "best_epoch": best_epoch, "arguments": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
+                  "metrics": classification_metrics(confusion, metadata["class_names"])}
+        # classification_metrics has legacy test_* names; rename for clear provenance.
+        report["metrics"]["accuracy"] = report["metrics"].pop("test_accuracy")
+        (args.output_dir / "validation_metrics.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print("Validation-only run completed; no deployment bundle exported", flush=True)
+        return
     # The held-out test set is evaluated once, after all model selection.
     accuracy, confusion = evaluate(model, classifier, test_loader, device)
     print(f"test accuracy={accuracy:.4f}", flush=True)
@@ -274,6 +317,8 @@ def main():
         "metrics": classification_metrics(confusion, metadata["class_names"]),
         "training_info": {
             "classification_loss": args.classification_loss,
+            "contrastive_objective":args.contrastive_objective,
+            "finetune_tfc_weight": args.finetune_tfc_weight, "sampler": sampler_name,
             "focal_gamma": args.focal_gamma, "cb_beta": args.cb_beta,
             "class_counts": label_counts.tolist(),
             "initialization": "random_full_vits16" if args.from_scratch else "smoke_test" if args.smoke_test else "pretrained",
