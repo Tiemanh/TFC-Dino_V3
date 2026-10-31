@@ -381,9 +381,11 @@ Image được gắn ba dạng tag: `latest`, tag phiên bản như `v1.0.0` và
 `sha-<commit>`. Ví dụ sau khi public:
 
 ```powershell
-docker pull <dockerhub-username>/tfc-dinov3-gesture:latest
-docker run --rm -p 8501:8501 <dockerhub-username>/tfc-dinov3-gesture:latest
+docker pull tiemanh05/tfc-dinov3-gesture:latest
+docker run --rm -p 8501:8501 tiemanh05/tfc-dinov3-gesture:latest
 ```
+
+Image public: [Docker Hub — tiemanh05/tfc-dinov3-gesture](https://hub.docker.com/r/tiemanh05/tfc-dinov3-gesture).
 
 Model 166 MB được quản lý bằng Git LFS; cả hai workflow đều bật tải LFS trước
 khi kiểm thử hoặc build để tránh đóng gói nhầm file LFS pointer.
