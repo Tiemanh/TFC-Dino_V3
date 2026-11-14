@@ -15,7 +15,15 @@ class GesturePredictor:
     def __init__(self, bundle_path, device="cpu"):
         self._prediction_lock = Lock()
         self.device = torch.device(device)
-        bundle = torch.load(bundle_path, map_location=self.device, weights_only=False)
+        # mmap keeps the 166 MB checkpoint on disk and pages tensors in only
+        # when needed.  This avoids holding a second full copy of both DINOv3
+        # state dictionaries while constructing the model on small cloud VMs.
+        bundle = torch.load(
+            bundle_path,
+            map_location=self.device,
+            weights_only=False,
+            mmap=True,
+        )
         self.training_info = bundle.get("training_info", {})
         if self.training_info.get("initialization") == "smoke_test":
             raise ValueError("Smoke-test bundle is not a trained gesture model")
@@ -30,10 +38,30 @@ class GesturePredictor:
             dinov3_freeze_backbone=True,
             dinov3_backbone_config=bundle["dinov3_backbone_config"],
         )
-        self.model = TFC(config).to(self.device)
-        self.classifier = target_classifier(config).to(self.device)
-        self.model.load_state_dict(bundle["model_state_dict"])
-        self.classifier.load_state_dict(bundle["classifier_state_dict"])
+        # Build parameter shells on the meta device, then bind checkpoint
+        # tensors directly.  ``assign=True`` removes the usual peak-memory
+        # duplication (new parameters + checkpoint parameters).
+        if self.device.type == "cpu":
+            with torch.device("meta"):
+                self.model = TFC(config)
+                self.classifier = target_classifier(config)
+            self.model.load_state_dict(bundle["model_state_dict"], assign=True)
+            self.classifier.load_state_dict(bundle["classifier_state_dict"], assign=True)
+            # DINOv3's RoPE frequency table is intentionally non-persistent,
+            # so it is absent from the checkpoint and remains on ``meta``.
+            # Recreate only these tiny buffers on CPU from their module config.
+            for module in self.model.modules():
+                inv_freq = getattr(module, "inv_freq", None)
+                if inv_freq is not None and inv_freq.device.type == "meta":
+                    restored = 1 / module.base ** torch.arange(
+                        0, 1, 4 / module.head_dim, dtype=torch.float32
+                    )
+                    module.inv_freq = restored
+        else:
+            self.model = TFC(config).to(self.device)
+            self.classifier = target_classifier(config).to(self.device)
+            self.model.load_state_dict(bundle["model_state_dict"])
+            self.classifier.load_state_dict(bundle["classifier_state_dict"])
         self.model.eval()
         self.classifier.eval()
 

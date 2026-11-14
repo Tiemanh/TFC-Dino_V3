@@ -17,7 +17,7 @@ async function request(url,options){
   return data;
 }
 function resetPrediction(){document.querySelector('#predictedLabel').textContent='—';document.querySelector('#confidenceText').textContent='—';document.querySelector('#confidenceBar').style.width='0%';document.querySelector('#probabilities').replaceChildren();}
-async function checkModel(){try{const data=await request('/api/health');modelReady=data.ready;document.querySelector('#requiredSamples').textContent=data.required_samples;modelState.className='model-state '+(data.ready?'ready':'error');modelState.querySelector('p').textContent=data.message;runButton.disabled=!(selectedFile&&modelReady)}catch{modelReady=false;runButton.disabled=true;modelState.className='model-state error';modelState.querySelector('p').textContent=connectionMessage}}
+async function checkModel(){try{const data=await request('/api/status');modelReady=data.ready;document.querySelector('#requiredSamples').textContent=data.required_samples;modelState.className='model-state '+(data.ready?'ready':'error');modelState.querySelector('p').textContent=data.message;runButton.disabled=!(selectedFile&&modelReady)}catch{modelReady=false;runButton.disabled=true;modelState.className='model-state error';modelState.querySelector('p').textContent=connectionMessage}}
 let previewVersion=0;
 async function preview(file){
   const version=++previewVersion;

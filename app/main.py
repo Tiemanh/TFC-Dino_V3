@@ -119,6 +119,26 @@ async def health():
     }
 
 
+@app.get("/api/status", include_in_schema=False)
+async def status():
+    """Report deploy readiness without importing PyTorch or loading DINOv3.
+
+    The expensive runtime remains lazy so opening the public page cannot take
+    down a memory-constrained free instance.  The first prediction performs
+    the real model load.
+    """
+    available = MODEL_PATH.is_file() and MODEL_PATH.stat().st_size > 1_000_000
+    return {
+        "ready": available,
+        "required_samples": 206,
+        "message": (
+            "Model đã được triển khai; sẽ nạp khi chạy dự đoán đầu tiên"
+            if available
+            else "Chưa tìm thấy model AI hoàn chỉnh trên máy chủ"
+        ),
+    }
+
+
 @app.get("/api/live", include_in_schema=False)
 async def live():
     """Lightweight platform health check that does not load the AI model."""
