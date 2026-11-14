@@ -353,17 +353,46 @@ xử lý tuần tự và tối đa 64 cửa sổ trải đều mỗi file, batch
 Các giới hạn này giúp kiểm soát RAM khi nhiều người dùng; xác suất trả về
 với file dài là trung bình trên các cửa sổ được chọn.
 
-## 10. Docker và CI/CD
+## 10. Web đầy đủ, kiểm thử, Docker và CI/CD
 
-Image production chạy giao diện Streamlit cùng model đã xuất ở cổng `8501`:
+Bản web production được tách rõ hai lớp trong cùng một dịch vụ:
+
+```text
+HTML/CSS/JavaScript -> FastAPI -> GesturePredictor -> TF-C + DINOv3
+```
+
+Frontend nằm trong `app/static/`; backend nằm tại `app/main.py`. Frontend gọi
+`GET /api/health`, `POST /api/preview` và `POST /api/predict`. Chạy cục bộ bằng:
+
+```powershell
+python -m pip install -r requirements.txt -r requirements-test.txt
+python run_web.py
+```
+
+Mở `http://localhost:8000`; tài liệu API tương tác nằm tại
+`http://localhost:8000/docs`. Streamlit vẫn được giữ như một giao diện phụ để
+deploy trên Streamlit Community Cloud.
+
+Hai bộ kiểm thử mới có đúng 20 trường hợp:
+
+- `tests/test_api_system_cases.py`: 10 test frontend, API, AI contract và mock.
+- `tests/test_ai_attack_cases.py`: 10 mô phỏng tấn công đầu vào và model.
+
+Chạy riêng hai bộ này bằng:
+
+```powershell
+python -m unittest tests.test_api_system_cases tests.test_ai_attack_cases -v
+```
+
+Image production chạy frontend và FastAPI cùng model đã xuất ở cổng `8000`:
 
 ```powershell
 docker build -t tfc-dinov3-gesture:local .
-docker run --rm -p 8501:8501 tfc-dinov3-gesture:local
+docker run --rm -p 8000:8000 tfc-dinov3-gesture:local
 ```
 
-Mở `http://localhost:8501`. Container có health check tại
-`/_stcore/health`, chạy bằng user không có quyền root và chỉ chứa code inference,
+Mở `http://localhost:8000`. Container có health check nhẹ tại
+`/api/live`, chạy bằng user không có quyền root và chỉ chứa code inference,
 file mẫu cùng model bundle. Dataset huấn luyện không được đóng gói vào image.
 
 Pipeline [`.github/workflows/ci.yml`](.github/workflows/ci.yml) tự động chạy khi
@@ -382,7 +411,7 @@ Image được gắn ba dạng tag: `latest`, tag phiên bản như `v1.0.0` và
 
 ```powershell
 docker pull tiemanh05/tfc-dinov3-gesture:latest
-docker run --rm -p 8501:8501 tiemanh05/tfc-dinov3-gesture:latest
+docker run --rm -p 8000:8000 tiemanh05/tfc-dinov3-gesture:latest
 ```
 
 Image public: [Docker Hub — tiemanh05/tfc-dinov3-gesture](https://hub.docker.com/r/tiemanh05/tfc-dinov3-gesture).

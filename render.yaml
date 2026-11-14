@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: tfc-dinov3-gesture
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/live
