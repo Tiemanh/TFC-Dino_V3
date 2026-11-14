@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "functions": {
+    "index.py": {
+      "maxDuration": 300,
+      "includeFiles": "{app/**,code/TFC/**,sample_data/**,artifacts/gesture_model/**}",
+      "excludeFiles": "{tests/**,data/**,datasets/**,kaggle/**,reports/**,images/**,tools/**,output/**,tmp/**,**/__pycache__/**}"
+    }
+  }
+}

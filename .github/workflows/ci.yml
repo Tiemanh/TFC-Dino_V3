@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/fastapi-render]
+    branches: [main, feature/fastapi-render, feature/vercel]
   pull_request:
     branches: [main]
   workflow_dispatch:

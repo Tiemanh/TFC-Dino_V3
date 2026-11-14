@@ -5,6 +5,10 @@
 **Backbone thay thế:** [Meta DINOv3 ViT-S/16](https://huggingface.co/facebook/dinov3-vits16-pretrain-lvd1689m)<br>
 **Ứng dụng:** [tfc-dinov3-gesture.streamlit.app](https://tfc-dinov3-gesture.streamlit.app/)
 
+**Nhánh Vercel:** `feature/vercel` triển khai trực tiếp FastAPI từ GitHub bằng
+`index.py` và `vercel.json`. Git LFS phải được bật trong Vercel để tải
+`model_bundle.pt`; Large Functions cần biến `VERCEL_SUPPORT_LARGE_FUNCTIONS=1`.
+
 > **Yêu cầu chính:** thay **cả Time Encoder và Frequency Encoder** của TF-C bằng
 > hai DINOv3 ViT-S/16 độc lập và cập nhật loss phân loại thành
 > **Class-Balanced Focal Loss**. Giữ lại luồng học tương phản time–frequency,
