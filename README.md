@@ -388,6 +388,18 @@ Chạy riêng hai bộ này bằng:
 python -m unittest tests.test_api_system_cases tests.test_ai_attack_cases -v
 ```
 
+Để chạy đúng kịch bản thực hành và tự động sinh minh chứng JSON/Markdown:
+
+```powershell
+python tools/run_practice_tests.py
+```
+
+Đặc tả 20 trường hợp nằm tại `reports/testing/TEST_PLAN.md`. Kết quả được ghi
+vào `reports/testing/test-results.json` và `reports/testing/SUMMARY.md`.
+GitHub Actions tải các file này thành artifact `ai-testing-evidence`. AT09 và
+AT10 được đánh dấu `RISK` nếu API vẫn chạy nhưng model chưa phát hiện nhiễu
+ngoài phân phối hoặc hoán đổi trục cảm biến.
+
 Image production chạy frontend và FastAPI cùng model đã xuất ở cổng `8000`:
 
 ```powershell

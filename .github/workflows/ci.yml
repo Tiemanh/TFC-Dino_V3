@@ -51,6 +51,19 @@ jobs:
           fi
           exit "$status"
 
+      - name: Generate 20-case practice evidence
+        run: python tools/run_practice_tests.py
+
+      - name: Upload AI testing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-testing-evidence
+          path: |
+            reports/testing/test-results.json
+            reports/testing/SUMMARY.md
+            reports/testing/TEST_PLAN.md
+          if-no-files-found: error
+
   docker-build:
     runs-on: ubuntu-latest
     timeout-minutes: 45

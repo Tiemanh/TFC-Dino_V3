@@ -43,6 +43,13 @@ class FakePredictor:
         }
 
 
+class ExplodingPredictor(FakePredictor):
+    """Test double that simulates a private exception inside the AI runtime."""
+
+    def predict(self, xyz):
+        raise RuntimeError("private checkpoint path must not be exposed")
+
+
 class ApiSystemCases(unittest.IsolatedAsyncioTestCase):
     """Exactly ten cases required by the functional test specification."""
 
@@ -122,12 +129,14 @@ class ApiSystemCases(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("206", response.json()["detail"])
 
-    @patch("app.main.get_predictor", return_value=None)
-    async def test_10_predict_returns_503_without_model(self, _mock):
+    @patch("app.main.get_predictor", return_value=ExplodingPredictor())
+    async def test_10_inference_failure_is_sanitized(self, _mock):
         response = await self.client.post(
             "/api/predict", files={"file": ("gesture.csv", sensor_csv(), "text/csv")}
         )
-        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json()["detail"], "Model không thể xử lý dữ liệu này")
+        self.assertNotIn("checkpoint", response.text.lower())
 
 
 if __name__ == "__main__":
