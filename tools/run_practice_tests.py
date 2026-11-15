@@ -17,6 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "reports" / "testing"
+sys.path.insert(0, str(ROOT))
 
 
 CASE_CATALOG = {
